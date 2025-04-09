@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "axios": "^1.8.4",
+    "node-cron": "^3.0.3",
+    "snoowrap": "^1.23.0"
+  },
+  "name": "mr-turtle-bot",
+  "version": "0.1.0",
+  "description": "reddit bot",
+  "main": "bot.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BigLoafin/mr-turtle-bot-reddit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BigLoafin/mr-turtle-bot-reddit/issues"
+  },
+  "homepage": "https://github.com/BigLoafin/mr-turtle-bot-reddit#readme"
+}
