@@ -76,27 +76,34 @@ const { posts: previouslySeenPosts, comments: previouslySeenComments } = readSee
 // Function to monitor new submissions in specified subreddits
 function monitorSubreddits() {
   console.log(`🐢 Starting to monitor r/${WATCH_SUBREDDITS.join(', ')} for new posts...`);
-  
+
   // Track the last check time
   let lastCheckTime = Date.now();
-  
-  // Poll for new submissions every 30 seconds
+
+  // Poll for new submissions every 59 seconds, but avoid the critical minute
   setInterval(async () => {
-    console.log('🐢 ' + new Date().toLocaleString() + ': Checking for new posts...');
+    const now = new Date();
+    // Skip this check if we're close to the scheduled cron job time (Saturday 18:59 UTC)
+    if (now.getDay() === 6 && now.getHours() === 18 && (now.getMinutes() === 58 || now.getMinutes() === 59)) {
+      console.log('🐢 Skipping post check to prioritize scheduled episode post');
+      return;
+    }
+    
+    console.log('🐢 ' + now.toLocaleString() + ': Checking for new posts...');
     try {
       // Get the latest posts directly
       const subreddit = r.getSubreddit(WATCH_SUBREDDITS.join('+'));
       const latestPosts = await subreddit.getNew({limit: 10});
-      
+
       const currentTime = Date.now();
-      
+
       for (const post of latestPosts) {
         if (post.author.name === 'MrTurtleBot') continue; // Ignore own posts
         if (post.author.name === 'AutoModerator') continue; // Ignore AutoModerator posts
         if (post.title.includes('removed')) continue; // Ignore removed posts
         if (post.title.includes('deleted')) continue; // Ignore deleted posts
         const postCreated = post.created_utc * 1000; // Convert to milliseconds
-        
+
         // Only process posts created since our last check
         if (postCreated > lastCheckTime) {
           // Find which keyword(s) matched
@@ -107,7 +114,7 @@ function monitorSubreddits() {
 
           if (turtleMatch && !previouslySeenPosts.has(post.id)) {
             console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching post: "${post.title}"`);
-            
+
             console.log(`🐢 [monitorSubreddits: ${new Date().toLocaleString()}]: Replied to post by u/${post.author.name}\nDodge definitely knocked over that candle.`);
             // Mark as seen
             previouslySeenPosts.add(post.id);
@@ -115,15 +122,15 @@ function monitorSubreddits() {
             return post.reply(`Dodge definitely knocked over that candle.`);
           }
           const matchedKeywords = findMatchedKeywords(post.title, post.selftext);
-          
+
           if (matchedKeywords.length > 0) {
             console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching post: "${post.title}" with keywords: ${matchedKeywords.join(', ')}`);
-            
+
             // Only respond if we haven't seen this post before
             if (!previouslySeenPosts.has(post.id)) {
               // Take action - pass the matched keywords
               await respondToPost(post, matchedKeywords);
-              
+
               // Mark as seen
               previouslySeenPosts.add(post.id);
               saveSeenContent(previouslySeenPosts, previouslySeenComments);
@@ -133,10 +140,10 @@ function monitorSubreddits() {
           }
         }
       }
-      
+
       // Update the last check time
       lastCheckTime = currentTime;
-      
+
     } catch (error) {
       console.error('🐢 Error monitoring subreddits:', error);
     }
@@ -148,14 +155,14 @@ function findMatchedKeywords(title, selftext) {
   const matchedKeywords = [];
   const titleLower = title ? title.toLowerCase() : '';
   const textLower = selftext ? selftext.toLowerCase() : '';
-  
+
   KEYWORDS.forEach(keyword => {
     const keywordLower = keyword.toLowerCase();
     if (titleLower.includes(keywordLower) || textLower.includes(keywordLower)) {
       matchedKeywords.push(keyword);
     }
   });
-  
+
   return matchedKeywords;
 }
 
@@ -164,7 +171,7 @@ async function respondToPost(post, matchedKeywords) {
   try {
     // Customize reply based on the matched keywords
     let keywordMention = '';
-    
+
     if (matchedKeywords.length === 1) {
       keywordMention = `you mentioned "${matchedKeywords[0]}"`;
     } else {
@@ -200,7 +207,7 @@ async function respondToPost(post, matchedKeywords) {
 
     await post.reply(reply);
     console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Replied to post by u/${post.author.name}\n${reply}`);
-    
+
     // Save immediately after processing
     saveSeenContent(previouslySeenPosts, previouslySeenComments);
   } catch (error) {
@@ -211,22 +218,29 @@ async function respondToPost(post, matchedKeywords) {
 // Function to monitor comments in specified subreddits
 function monitorComments() {
   console.log(`🐢 Starting to monitor comments in r/${WATCH_SUBREDDITS.join(', ')}...`);
-  
+
   // Track the last check time for comments
   let lastCommentCheckTime = Date.now();
-  
+
   // Poll for new comments every 120 seconds
   setInterval(async () => {
-    console.log('🐢 ' + new Date().toLocaleString() + ': Checking for new comments...');
+    const now = new Date();
+    // Skip this check if we're close to the scheduled cron job time (Saturday 18:59)
+    if (now.getDay() === 6 && now.getHours() === 18 && (now.getMinutes() === 58 || now.getMinutes() === 59)) {
+      console.log('🐢 Skipping comments check to prioritize scheduled episode post');
+      return;
+    }
+  
+  console.log('🐢 ' + new Date().toLocaleString() + ': Checking for new comments...');
     try {
       // Get the latest comments directly
       const subreddit = r.getSubreddit(WATCH_SUBREDDITS.join('+'));
       const latestComments = await subreddit.getNewComments({limit: 25});
-      
+
       const currentTime = Date.now();
-      
+
       for (const comment of latestComments) {
-        
+
         if (comment.author.name === 'MrTurtleBot') continue; // Ignore own comments
         if (comment.author.name === 'AutoModerator') continue; // Ignore AutoModerator comments
         if (comment.body.includes('removed')) continue; // Ignore removed comments
@@ -234,10 +248,10 @@ function monitorComments() {
 
 
         const commentCreated = comment.created_utc * 1000; // Convert to milliseconds
-        
+
         // Only process comments created since our last check
         if (commentCreated > lastCommentCheckTime) {
-          
+
         console.log('🐢 comment.author.name:', comment.author.name);
         console.log('🐢 comment.id:', comment.id);
         console.log('🐢 comment.body:', comment.body);
@@ -249,7 +263,7 @@ function monitorComments() {
           const turtleMatch2 = comment.body.match(turtleRegExp2);
           if (turtleMatch2 && !previouslySeenComments.has(comment.id)) {
             console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching comment: "${comment.body}"`);
-            
+
             // Take action - reply to the comment
             console.log(`🐢 [monitorComments: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\nDodge definitely knocked over that candle.`);
             if (!previouslySeenComments.has(comment.id)) {
@@ -262,15 +276,15 @@ function monitorComments() {
 
           // Check for keywords in comment body
           const matchedKeywords = findMatchedKeywords('', comment.body);
-          
+
           if (matchedKeywords.length > 0) {
             console.log(`🐢 [monitorComments: ${new Date().toLocaleString()}]: Found matching comment: "${comment.body.substring(0, 50)}" with keywords: ${matchedKeywords.join(', ')}`);
-            
+
             // Only respond if we haven't seen this comment before
             if (!previouslySeenComments.has(comment.id)) {
               // Take action - reply to the comment
               await respondToComment(comment, matchedKeywords);
-              
+
               // Mark as seen
               previouslySeenComments.add(comment.id);
               saveSeenContent(previouslySeenPosts, previouslySeenComments);
@@ -280,10 +294,10 @@ function monitorComments() {
           }
         }
       }
-      
+
       // Update the last check time
       lastCommentCheckTime = currentTime;
-      
+
     } catch (error) {
       console.error('🐢 Error monitoring comments:', error);
     }
@@ -309,7 +323,7 @@ async function respondToComment(comment, matchedKeywords) {
 
     // Customize reply based on the matched keywords
     let keywordMention = '';
-    
+
     if (matchedKeywords.length === 1) {
       keywordMention = `you mentioned "${matchedKeywords[0]}"`;
     } else {
@@ -319,7 +333,7 @@ async function respondToComment(comment, matchedKeywords) {
 
     let reply = `Hello! I noticed ${keywordMention}! Nice!`;
 
-    
+
     if (matchedKeywords === '20th' || matchedKeywords === 'twentieth' || matchedKeywords === 'anniversary') {
       reply = `Hello! I noticed ${keywordMention}! I'm Mr. Turtle, a bot that helps with our My Name Is Earl 20th anniversary discussion series!`;
     }
@@ -344,10 +358,10 @@ async function respondToComment(comment, matchedKeywords) {
         await comment.upvote();
       }
     }
-    
+
     await comment.reply(reply);
     console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\n${reply}`);
-    
+
     // Save immediately after processing
     saveSeenContent(previouslySeenPosts, previouslySeenComments);
   } catch (error) {
@@ -359,10 +373,13 @@ async function respondToComment(comment, matchedKeywords) {
 function readState() {
   try {
     if (fs.existsSync(STATE_FILE)) {
-      return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+      const tData = fs.readFileSync(STATE_FILE, 'utf8');
+      console.log('tData',tData);
+      return JSON.parse(tData);
     } else {
       // Default state if file doesn't exist
       const defaultState = { currentSeason: 1, currentEpisode: 0 };
+      console.log('created state file');
       fs.writeFileSync(STATE_FILE, JSON.stringify(defaultState, null, 2));
       return defaultState;
     }
@@ -397,28 +414,28 @@ async function postNextEpisode() {
   try {
     // Read the current state
     const state = readState();
-    
+
     // Fetch all episodes
     const response = await axios.get(`https://api.tvmaze.com/shows/${SHOW_ID}/episodes`);
     const allEpisodes = response.data;
-    
+
     // Sort episodes by season and episode number
     allEpisodes.sort((a, b) => {
       if (a.season !== b.season) return a.season - b.season;
       return a.number - b.number;
     });
-    
+
     // Find the next episode
-    const nextEpisode = allEpisodes.find(ep => 
-      (ep.season > state.currentSeason) || 
+    const nextEpisode = allEpisodes.find(ep =>
+      (ep.season > state.currentSeason) ||
       (ep.season === state.currentSeason && ep.number > state.currentEpisode)
     );
-    
+
     if (!nextEpisode) {
       console.log('🐢 No more episodes to post - end of series reached');
       return;
     }
-    
+
     // Create the post
     const title = `Episode Discussion: ${nextEpisode.name} (S${nextEpisode.season}E${nextEpisode.number})`;
     const body = `
@@ -446,10 +463,10 @@ async function postNextEpisode() {
     } catch (pinError) {
       console.log('🐢 Note: Could not pin post - bot account needs moderator permissions');
     }
-    
+
     // Update the state with the episode we just posted
     saveState(nextEpisode.season, nextEpisode.number);
-    
+
   } catch (error) {
     console.error('🐢 Error posting episode:', error);
   }
@@ -461,11 +478,14 @@ function setStartingPoint(season, episode) {
   console.log(`🐢 Starting point set to Season ${season}, Episode ${episode}`);
 }
 
-// Schedule weekly posts (e.g., every Monday at 18:59 UTC, which is 1:59 PM CST, and 7:59 PM in Manchester UK)
+// Schedule weekly posts (e.g., every Saturday at 18:59 UTC, which is 1:59 PM CST, and 7:59 PM in Manchester UK)
 // Adjust the cron expression as needed for your timezone
-cron.schedule('59 18 * * 1', () => {
-  console.log('🐢 Running scheduled episode post...' + new Date().toLocaleString());
-  postNextEpisode();
+cron.schedule('59 18 * * 6', () => {
+  // Use setImmediate to give this task higher priority in the event loop
+  setImmediate(() => {
+    console.log('🐢 Running scheduled episode post...' + new Date().toLocaleString());
+    postNextEpisode();
+  });
 });
 
 console.log('🐢 ... MrTurtleBot is crawling!');
