@@ -200,8 +200,9 @@ async function respondToPost(post, matchedKeywords) {
       if (Math.random() < 0.9) return; // 90% chance to skip replying
       else {
         // give it a thumbs up!
-        console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Upvoting post by u/${post.author.name}`);
-        await post.upvote();
+        // console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Upvoting post by u/${post.author.name}`);
+        console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Ignoring post by u/${post.author.name}, so I don't bother everyone too much.`);
+        // await post.upvote();
       }
     }
 
@@ -354,8 +355,9 @@ async function respondToComment(comment, matchedKeywords) {
       if (Math.random() < 0.9) return; // 90% chance to skip replying
       else {
         // give it a thumbs up!
-        console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Upvoting comment by u/${comment.author.name}`);
-        await comment.upvote();
+        // console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Upvoting comment by u/${comment.author.name}`);
+        // await comment.upvote();
+        console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Ignoring comment by u/${comment.author.name}, so I don't bother everyone.`);
       }
     }
 
