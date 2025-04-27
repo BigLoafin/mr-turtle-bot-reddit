@@ -12,7 +12,7 @@ MrTurtleBot is a Reddit bot that helps facilitate the "My Name Is Earl" 20th ann
 - Helps keep the anniversary rewatch organized
 
 ## Episode Discussion Posts
-- 🐢 Every day at 9 PM EST, I post the next episode in sequence
+- 🐢 Every Saturday at 3 PM Eastern time, I post the next episode in sequence
 - 🐢 Each post includes the episode title, season/episode number, original air date, and summary
 - 🐢 The posts follow the show's original order, starting from Season 1
 
