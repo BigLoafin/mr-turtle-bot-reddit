@@ -260,7 +260,7 @@ function monitorComments() {
         console.log('🐢 utc', new Date().toLocaleString())
         console.log('------------------------🐢');
 
-        if (comment.body.match(/^hey(,|) crabman('|)s turtle(.|!|\?|)$/i)) {
+        if (comment.body.match(/^hey,? crabman'?s turtle[.!?]?$/i)) {
           if (!previouslySeenComments.has(comment.id)) {
             // Mark as seen
             previouslySeenComments.add(comment.id);
@@ -322,7 +322,7 @@ function monitorComments() {
 async function respondToComment(comment, matchedKeywords) {
   // console.log(`🐢 comment:`, comment);
   try {
-    if (comment.body.match(/^hey(,|) crabman('|)s turtle(.|!|\?|)$/i)) {
+    if (comment.body.match(/^hey,? crabman'?s turtle[.!?]?$/i)) {
       let reply = `Hey Earl.`;
       console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\n${reply}`);
       return comment.reply(reply);
