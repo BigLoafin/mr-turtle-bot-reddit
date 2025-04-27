@@ -259,8 +259,8 @@ function monitorComments() {
         console.log('🐢------------------------');
         console.log('🐢 utc', new Date().toLocaleString())
         console.log('------------------------🐢');
-
-        if (comment.body.match(/^hey,? crabman'?s turtle[.!?]?$/i)) {
+          
+        if (comment.body.match(/^hey,?\s*crabman[‘’']?s turtle[.!?]?$/i)) {
           if (!previouslySeenComments.has(comment.id)) {
             // Mark as seen
             previouslySeenComments.add(comment.id);
