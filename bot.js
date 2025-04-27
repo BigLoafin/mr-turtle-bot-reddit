@@ -260,6 +260,17 @@ function monitorComments() {
         console.log('🐢 utc', new Date().toLocaleString())
         console.log('------------------------🐢');
 
+        if (comment.body.match(/^hey(,|) crabman('|)s turtle(.|!|\?|)$/i)) {
+          if (!previouslySeenComments.has(comment.id)) {
+            // Mark as seen
+            previouslySeenComments.add(comment.id);
+            saveSeenContent(previouslySeenPosts, previouslySeenComments);
+            let reply = `Hey Earl.`;
+            console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\n${reply}`);
+            return comment.reply(reply);
+          }
+        }
+
           const turtleRegExp2 = /(turtle(.*)?knocked\W*over\W*((the|a|that|)\W*)?candle\b)|(turtle(.*)?knocked\W*((the|a|that|)\W*)?candle\W*over\b)/i;
           const turtleMatch2 = comment.body.match(turtleRegExp2);
           if (turtleMatch2 && !previouslySeenComments.has(comment.id)) {
