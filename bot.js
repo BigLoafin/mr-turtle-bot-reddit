@@ -17,13 +17,13 @@ const r = new snoowrap({
   password: password
 });
 
-const SUBREDDIT = 'MrTurtleBot_Prototype';
+const SUBREDDIT = 'MyNameIsEarlFans';
 const SHOW_ID = '678';
 const STATE_FILE = path.join(__dirname, 'episodeState.json');
 const SEEN_CONTENT_FILE = path.join(__dirname, 'seenContent.json');
 
 // Add this near your other constants
-const WATCH_SUBREDDITS = ['MrTurtleBot_Prototype']; // Add more subreddits as needed
+const WATCH_SUBREDDITS = ['MyNameIsEarlFans']; // Add more subreddits as needed
 const KEYWORDS = ['earl', 'karma', 'list', 'crabman', 'good bot', '20th', 'twentieth', 'anniversary']; // Keywords to watch for
 
 // Function to check if a string contains any of the keywords
