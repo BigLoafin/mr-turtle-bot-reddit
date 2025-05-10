@@ -514,13 +514,13 @@ function setStartingPoint(season, episode) {
 
 // Schedule weekly posts (e.g., every Saturday at 18:59 UTC, which is 1:59 PM CST, and 7:59 PM in Manchester UK)
 // Adjust the cron expression as needed for your timezone
-cron.schedule('59 18 * * 6', () => {
+//cron.schedule('59 18 * * 6', () => {
   // Use setImmediate to give this task higher priority in the event loop
-  setImmediate(() => {
-    console.log('🐢 Running scheduled episode post...' + new Date().toLocaleString());
-    postNextEpisode();
-  });
-});
+  //setImmediate(() => {
+    //console.log('🐢 Running scheduled episode post...' + new Date().toLocaleString());
+    //postNextEpisode();
+  //});
+//});
 
 console.log('🐢 ... MrTurtleBot is crawling!');
 
