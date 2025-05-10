@@ -4,6 +4,7 @@ const axios = require('axios');
 const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
+const { match } = require('assert');
 
 // Destructure the required properties
 const { userAgent, clientId, clientSecret, username, password } = config;
@@ -170,41 +171,50 @@ function findMatchedKeywords(title, selftext) {
 async function respondToPost(post, matchedKeywords) {
   try {
     // Customize reply based on the matched keywords
-    let keywordMention = '';
+    console.log('matchedKeywords', matchedKeywords);
+    // matchedKeywords is an array, which means it is a LIST of keywords
+    // even if there is only 1 keyword, this will still be a LIST with 1 keyword on it
 
+    let reply = '';
+    
+    if (matchedKeywords.length === 1 && matchedKeywords[0] === 'earl') {
+      reply = 'Earl is a great character!';
+    }
+    else if (matchedKeywords.length === 1 && matchedKeywords[0] === 'karma') {
+      reply = 'Karma is a central theme in the show!';
+    }
+    else if (matchedKeywords.length === 1 && matchedKeywords[0] === 'list') {
+      reply = 'The list is iconic!';
+    }
+    else if (matchedKeywords.length === 1 && matchedKeywords[0] === 'crabman') {
+      reply = 'Crabman is a fan-favorite!';
+    }
+    
+    if (reply != '') {
+      await post.reply(reply);
+      console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Replied to post by u/${post.author.name}\n${reply}`);
+
+      // Save immediately after processing
+      saveSeenContent(previouslySeenPosts, previouslySeenComments);
+      return;
+    }
+    
+    let keywordMention = '';
     if (matchedKeywords.length === 1) {
       keywordMention = `you mentioned "${matchedKeywords[0]}"`;
     } else {
       const lastKeyword = matchedKeywords.pop();
       keywordMention = `you mentioned ${matchedKeywords.join(', ')} and ${lastKeyword}`;
     }
+    reply = `Hello! I noticed ${keywordMention}! Nice!`;
 
-    let reply = `Hello! I noticed ${keywordMention}! Nice!`;
-
-    if (matchedKeywords === '20th' || matchedKeywords === 'twentieth' || matchedKeywords === '20' || matchedKeywords === 'twenty' || matchedKeywords === 'anniversary') {
+    if (matchedKeywords.includes('20th') || matchedKeywords.includes('twentieth') || matchedKeywords.includes('20') || matchedKeywords.includes('twenty') || matchedKeywords.includes('anniversary')) {
       reply = `Hello! I noticed ${keywordMention}! I'm Mr. Turtle, a bot that helps with our My Name Is Earl 20th anniversary discussion series!`;
-    }
-    else if (matchedKeywords === 'earl') {
-      reply = 'Earl is a great character!';
-    }
-    else if (matchedKeywords === 'karma') {
-      reply = 'Karma is a central theme in the show!';
-    }
-    else if (matchedKeywords === 'list') {
-      reply = 'The list is iconic!';
-    }
-    else if (matchedKeywords === 'crabman') {
-      reply = 'Crabman is a fan-favorite!';
     }
     else {
       if (Math.random() < 0.9) {
         console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Ignoring post by u/${post.author.name}, so I don't bother everyone too much.`);
         return; // 90% chance to skip replying
-      }
-      else {
-        // give it a thumbs up!
-        // console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Upvoting post by u/${post.author.name}`);
-        // await post.upvote();
       }
     }
 
@@ -324,6 +334,7 @@ function monitorComments() {
 async function respondToComment(comment, matchedKeywords) {
   // console.log(`🐢 comment:`, comment);
   try {
+    console.log('matchedKeywords', matchedKeywords);
     if (comment.body.match(/^hey,? crabman'?s turtle[.!?]?$/i)) {
       let reply = `Hey Earl.`;
       console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\n${reply}`);
@@ -336,6 +347,30 @@ async function respondToComment(comment, matchedKeywords) {
     }
 
     // Customize reply based on the matched keywords
+    let reply = ``;
+
+    if (matchedKeywords.length === 1 && matchedKeywords[0] === 'earl') {
+      reply = 'Earl is a great character! Do you have a favorite episode?';
+    }
+    else if (matchedKeywords.length === 1 && matchedKeywords[0] === 'karma') {
+      reply = 'Karma is a central theme in the show! What are your thoughts on it?';
+    }
+    else if (matchedKeywords.length === 1 && matchedKeywords[0] === 'list') {
+      reply = 'The list is iconic! What’s your favorite item on it?';
+    }
+    else if (matchedKeywords.length === 1 && matchedKeywords[0] === 'crabman') {
+      reply = 'Crabman is a fan-favorite! Do you have a favorite moment with him?';
+    }
+    
+    if (reply != '') {
+      await comment.reply(reply);
+      console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\n${reply}`);
+
+      // Save immediately after processing
+      saveSeenContent(previouslySeenPosts, previouslySeenComments);
+      return;
+    }
+
     let keywordMention = '';
 
     if (matchedKeywords.length === 1) {
@@ -345,34 +380,16 @@ async function respondToComment(comment, matchedKeywords) {
       keywordMention = `you mentioned ${matchedKeywords.join(', ')} and ${lastKeyword}`;
     }
 
-    let reply = `Hello! I noticed ${keywordMention}! Nice!`;
-
-
-    if (matchedKeywords === '20th' || matchedKeywords === 'twentieth' || matchedKeywords === 'anniversary') {
+    reply = `Hello! I noticed ${keywordMention}! Nice!`;
+    
+    if (matchedKeywords.includes('20th') || matchedKeywords.includes('twentieth') || matchedKeywords.includes('20') || matchedKeywords.includes('twenty') || matchedKeywords.includes('anniversary')) {
       reply = `Hello! I noticed ${keywordMention}! I'm Mr. Turtle, a bot that helps with our My Name Is Earl 20th anniversary discussion series!`;
-    }
-    else if (matchedKeywords === 'earl') {
-      reply = 'Earl is a great character! Do you have a favorite episode?';
-    }
-    else if (matchedKeywords === 'karma') {
-      reply = 'Karma is a central theme in the show! What are your thoughts on it?';
-    }
-    else if (matchedKeywords === 'list') {
-      reply = 'The list is iconic! What’s your favorite item on it?';
-    }
-    else if (matchedKeywords === 'crabman') {
-      reply = 'Crabman is a fan-favorite! Do you have a favorite moment with him?';
     }
     else {
       // TODO: return out 90% of the time here
       if (Math.random() < 0.9) {
         console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Ignoring comment by u/${comment.author.name}, so I don't bother everyone.`);
         return; // 90% chance to skip replying
-      }
-      else {
-        // give it a thumbs up!
-        // console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Upvoting comment by u/${comment.author.name}`);
-        // await comment.upvote();
       }
     }
 
