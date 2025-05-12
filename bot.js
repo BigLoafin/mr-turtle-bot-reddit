@@ -4,7 +4,6 @@ const axios = require('axios');
 const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
-const { match } = require('assert');
 
 // Destructure the required properties
 const { userAgent, clientId, clientSecret, username, password } = config;
@@ -116,12 +115,18 @@ function monitorSubreddits() {
           if (turtleMatch && !previouslySeenPosts.has(post.id)) {
             console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching post: "${post.title}"`);
 
-            console.log(`🐢 [monitorSubreddits: ${new Date().toLocaleString()}]: Replied to post by u/${post.author.name}\nDodge definitely knocked over that candle.`);
             // Mark as seen
             previouslySeenPosts.add(post.id);
             saveSeenContent(previouslySeenPosts, previouslySeenComments);
+
+            console.log(`🐢 [monitorSubreddits: ${new Date().toLocaleString()}]: Replied to post by u/${post.author.name}\nDodge definitely knocked over that candle.`);
             return post.reply(`Dodge definitely knocked over that candle.`);
           }
+          else {
+            console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching post: "${post.title}"`);
+            console.log(`🐢 Already processed post ${post.id}, skipping`);
+          }
+
           const matchedKeywords = findMatchedKeywords(post.title, post.selftext);
 
           if (matchedKeywords.length > 0) {
@@ -190,32 +195,24 @@ async function respondToPost(post, matchedKeywords) {
       reply = 'Crabman is a fan-favorite!';
     }
     
-    if (reply != '') {
-      await post.reply(reply);
-      console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Replied to post by u/${post.author.name}\n${reply}`);
-
-      // Save immediately after processing
-      saveSeenContent(previouslySeenPosts, previouslySeenComments);
-      return;
-    }
-    
-    let keywordMention = '';
-    if (matchedKeywords.length === 1) {
-      keywordMention = `you mentioned "${matchedKeywords[0]}"`;
-    } else {
-      const lastKeyword = matchedKeywords.pop();
-      keywordMention = `you mentioned ${matchedKeywords.join(', ')} and ${lastKeyword}`;
-    }
-    reply = `Hello! I noticed ${keywordMention}! Nice!`;
-
-    if (matchedKeywords.includes('20th') || matchedKeywords.includes('twentieth') || matchedKeywords.includes('20') || matchedKeywords.includes('twenty') || matchedKeywords.includes('anniversary')) {
-      reply = `Hello! I noticed ${keywordMention}! I'm Mr. Turtle, a bot that helps with our My Name Is Earl 20th anniversary discussion series!`;
-    }
-    else {
-      if (Math.random() < 0.9) {
-        console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Ignoring post by u/${post.author.name}, so I don't bother everyone too much.`);
-        return; // 90% chance to skip replying
+    if (reply == '') {
+      let keywordMention = '';
+      if (matchedKeywords.length === 1) {
+        keywordMention = `you mentioned "${matchedKeywords[0]}"`;
+      } else {
+        const lastKeyword = matchedKeywords.pop();
+        keywordMention = `you mentioned ${matchedKeywords.join(', ')} and ${lastKeyword}`;
       }
+      reply = `Hello! I noticed ${keywordMention}! Nice!`;
+
+      if (matchedKeywords.includes('20th') || matchedKeywords.includes('twentieth') || matchedKeywords.includes('anniversary')) {
+        reply = `Hello! I noticed ${keywordMention}! I'm Mr. Turtle, a bot that helps with our My Name Is Earl 20th anniversary discussion series!`;
+      }
+    }
+
+    if (ninetyPercentChance()) {
+      console.log(`🐢 [respondToPost: ${new Date().toLocaleString()}]: Ignoring post by u/${post.author.name}, so I don't bother everyone too much.\n${reply}`);
+      return; // 90% chance to skip replying
     }
 
     await post.reply(reply);
@@ -244,7 +241,7 @@ function monitorComments() {
       return;
     }
   
-  console.log('🐢 ' + new Date().toLocaleString() + ': Checking for new comments...');
+    console.log('🐢 ' + new Date().toLocaleString() + ': Checking for new comments...');
     try {
       // Get the latest comments directly
       const subreddit = r.getSubreddit(WATCH_SUBREDDITS.join('+'));
@@ -285,17 +282,21 @@ function monitorComments() {
 
           const turtleRegExp2 = /(turtle(.*)?knocked\W*over\W*((the|a|that|)\W*)?candle\b)|(turtle(.*)?knocked\W*((the|a|that|)\W*)?candle\W*over\b)/i;
           const turtleMatch2 = comment.body.match(turtleRegExp2);
+          if (turtleMatch2) console.log('turtleMatch2: ' + comment.id);
           if (turtleMatch2 && !previouslySeenComments.has(comment.id)) {
+            
             console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching comment: "${comment.body}"`);
 
-            // Take action - reply to the comment
-            console.log(`🐢 [monitorComments: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\nDodge definitely knocked over that candle.`);
             if (!previouslySeenComments.has(comment.id)) {
-            // Mark as seen
-            previouslySeenComments.add(comment.id);
-            saveSeenContent(previouslySeenPosts, previouslySeenComments);
-            return comment.reply(`Dodge definitely knocked over that candle.`);
+
+              previouslySeenComments.add(comment.id);
+              saveSeenContent(previouslySeenPosts, previouslySeenComments);
+              console.log(`🐢 [monitorComments: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\nDodge definitely knocked over that candle.`);
+              return comment.reply(`Dodge definitely knocked over that candle.`);
             }
+          }
+          else {
+            console.log('Ignoring because the id is already listed.');
           }
 
           // Check for keywords in comment body
@@ -328,9 +329,6 @@ function monitorComments() {
   }, 61000); // Check every 61 seconds
 }
 
-// TODO: Do not do the general reply. Just respond to certain complete messages.
-
-// Modified version for respondToComment function
 async function respondToComment(comment, matchedKeywords) {
   // console.log(`🐢 comment:`, comment);
   try {
@@ -338,11 +336,13 @@ async function respondToComment(comment, matchedKeywords) {
     if (comment.body.match(/^hey,? crabman'?s turtle[.!?]?$/i)) {
       let reply = `Hey Earl.`;
       console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\n${reply}`);
+      saveSeenContent(previouslySeenPosts, previouslySeenComments);
       return comment.reply(reply);
     }
     if (comment.body.match(/good bot/i)) {
       let reply = 'Thanks! Got any arugula?';
       console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\n${reply}`)
+      saveSeenContent(previouslySeenPosts, previouslySeenComments);
       return comment.reply(reply);
     }
 
@@ -363,34 +363,26 @@ async function respondToComment(comment, matchedKeywords) {
     }
     
     if (reply != '') {
-      await comment.reply(reply);
-      console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\n${reply}`);
+      let keywordMention = '';
 
-      // Save immediately after processing
-      saveSeenContent(previouslySeenPosts, previouslySeenComments);
-      return;
-    }
-
-    let keywordMention = '';
-
-    if (matchedKeywords.length === 1) {
-      keywordMention = `you mentioned "${matchedKeywords[0]}"`;
-    } else {
-      const lastKeyword = matchedKeywords.pop();
-      keywordMention = `you mentioned ${matchedKeywords.join(', ')} and ${lastKeyword}`;
-    }
-
-    reply = `Hello! I noticed ${keywordMention}! Nice!`;
-    
-    if (matchedKeywords.includes('20th') || matchedKeywords.includes('twentieth') || matchedKeywords.includes('20') || matchedKeywords.includes('twenty') || matchedKeywords.includes('anniversary')) {
-      reply = `Hello! I noticed ${keywordMention}! I'm Mr. Turtle, a bot that helps with our My Name Is Earl 20th anniversary discussion series!`;
-    }
-    else {
-      // TODO: return out 90% of the time here
-      if (Math.random() < 0.9) {
-        console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Ignoring comment by u/${comment.author.name}, so I don't bother everyone.`);
-        return; // 90% chance to skip replying
+      if (matchedKeywords.length === 1) {
+        keywordMention = `you mentioned "${matchedKeywords[0]}"`;
+      } else {
+        const lastKeyword = matchedKeywords.pop();
+        keywordMention = `you mentioned ${matchedKeywords.join(', ')} and ${lastKeyword}`;
       }
+      if (matchedKeywords.includes('20th') || matchedKeywords.includes('twentieth') || matchedKeywords.includes('20') || matchedKeywords.includes('twenty') || matchedKeywords.includes('anniversary')) {
+        reply = `Hello! I noticed ${keywordMention}! I'm Mr. Turtle, a bot that helps with our My Name Is Earl 20th anniversary discussion series!`;
+      }
+      else {
+        reply = `Hello! I noticed ${keywordMention}! Nice!`;
+      }
+    }
+
+    // return out 90% of the time here
+    if (ninetyPercentChance()) {
+      console.log(`🐢 [respondToComment: ${new Date().toLocaleString()}]: Ignoring comment by u/${comment.author.name}, so I don't bother everyone.\n${reply}`);
+      return; // 90% chance to skip replying
     }
 
     await comment.reply(reply);
@@ -538,6 +530,10 @@ setTimeout(() => {
 setInterval(() => {
   saveSeenContent(previouslySeenPosts, previouslySeenComments);
 }, 5 * 60 * 1000);
+
+function ninetyPercentChance() {
+  return Math.random() < 0.9;
+}
 
 /**
  * ## How to use this script:
