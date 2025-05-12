@@ -362,7 +362,7 @@ async function respondToComment(comment, matchedKeywords) {
       reply = 'Crabman is a fan-favorite! Do you have a favorite moment with him?';
     }
     
-    if (reply != '') {
+    if (reply == '') {
       let keywordMention = '';
 
       if (matchedKeywords.length === 1) {
