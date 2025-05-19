@@ -88,7 +88,7 @@ function monitorSubreddits() {
       console.log('🐢 Skipping post check to prioritize scheduled episode post');
       return;
     }
-    
+
     console.log('🐢 ' + now.toLocaleString() + ': Checking for new posts...');
     try {
       // Get the latest posts directly
@@ -107,24 +107,23 @@ function monitorSubreddits() {
         // Only process posts created since our last check
         if (postCreated > lastCheckTime) {
           // Find which keyword(s) matched
-          const turtleRegExp = /(turtle(.*)?knocked\W*over\W*((the|a|that|)\W*)?candle\b)|(turtle(.*)?knocked\W*((the|a|that|)\W*)?candle\W*over\b)/i;
+          const turtleRegExp = /(turtle(.*)?knock(s|ed|ing)\W*over\W*((the|a|that|)\W*)?candle\b)|(turtle(.*)?knock(s|ed|ing)\W*((the|a|that|)\W*)?candle\W*over\b)/i;
           const turtleMatchTitle = post.title.match(turtleRegExp);
           const turtleMatchBody = post.selftext ? post.selftext.match(turtleRegExp) : null;
           const turtleMatch = turtleMatchTitle || turtleMatchBody;
-
-          if (turtleMatch && !previouslySeenPosts.has(post.id)) {
+          
+          if (turtleMatch) {
             console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching post: "${post.title}"`);
-
-            // Mark as seen
-            previouslySeenPosts.add(post.id);
-            saveSeenContent(previouslySeenPosts, previouslySeenComments);
-
-            console.log(`🐢 [monitorSubreddits: ${new Date().toLocaleString()}]: Replied to post by u/${post.author.name}\nDodge definitely knocked over that candle.`);
-            return post.reply(`Dodge definitely knocked over that candle.`);
-          }
-          else {
-            console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching post: "${post.title}"`);
-            console.log(`🐢 Already processed post ${post.id}, skipping`);
+            if (!previouslySeenPosts.has(post.id)) {
+              previouslySeenPosts.add(post.id);
+              saveSeenContent(previouslySeenPosts, previouslySeenComments);
+              console.log(`🐢 [monitorSubreddits: ${new Date().toLocaleString()}]: Replied to post by u/${post.author.name}\nDodge definitely knocked over that candle.`);
+              return post.reply(`Dodge definitely knocked over that candle.`);
+            }
+            else {
+              console.log(`🐢 Already processed post ${post.id}, skipping`);
+              continue;
+            }
           }
 
           const matchedKeywords = findMatchedKeywords(post.title, post.selftext);
@@ -181,7 +180,7 @@ async function respondToPost(post, matchedKeywords) {
     // even if there is only 1 keyword, this will still be a LIST with 1 keyword on it
 
     let reply = '';
-    
+
     if (matchedKeywords.length === 1 && matchedKeywords[0] === 'earl') {
       reply = 'Earl is a great character!';
     }
@@ -194,7 +193,7 @@ async function respondToPost(post, matchedKeywords) {
     else if (matchedKeywords.length === 1 && matchedKeywords[0] === 'crabman') {
       reply = 'Crabman is a fan-favorite!';
     }
-    
+
     if (reply == '') {
       let keywordMention = '';
       if (matchedKeywords.length === 1) {
@@ -240,7 +239,7 @@ function monitorComments() {
       console.log('🐢 Skipping comments check to prioritize scheduled episode post');
       return;
     }
-  
+
     console.log('🐢 ' + new Date().toLocaleString() + ': Checking for new comments...');
     try {
       // Get the latest comments directly
@@ -268,7 +267,7 @@ function monitorComments() {
         console.log('🐢------------------------');
         console.log('🐢 utc', new Date().toLocaleString())
         console.log('------------------------🐢');
-          
+
         if (comment.body.match(/^hey,?\s*crabman[‘’']?s turtle[.!?]?$/i)) {
           if (!previouslySeenComments.has(comment.id)) {
             // Mark as seen
@@ -280,23 +279,25 @@ function monitorComments() {
           }
         }
 
-          const turtleRegExp2 = /(turtle(.*)?knocked\W*over\W*((the|a|that|)\W*)?candle\b)|(turtle(.*)?knocked\W*((the|a|that|)\W*)?candle\W*over\b)/i;
+          const turtleRegExp2 = /(turtle(.*)?knock(s|ed|ing)\W*over\W*((the|a|that|)\W*)?candle\b)|(turtle(.*)?knock(s|ed|ing)\W*((the|a|that|)\W*)?candle\W*over\b)/i;
           const turtleMatch2 = comment.body.match(turtleRegExp2);
-          if (turtleMatch2) console.log('turtleMatch2: ' + comment.id);
-          if (turtleMatch2 && !previouslySeenComments.has(comment.id)) {
-            
+          if (turtleMatch2) {
+            console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: turtleMatch2: ` + comment.id);
             console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Found matching comment: "${comment.body}"`);
-
+            
             if (!previouslySeenComments.has(comment.id)) {
+              if (!previouslySeenComments.has(comment.id)) {
 
-              previouslySeenComments.add(comment.id);
-              saveSeenContent(previouslySeenPosts, previouslySeenComments);
-              console.log(`🐢 [monitorComments: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\nDodge definitely knocked over that candle.`);
-              return comment.reply(`Dodge definitely knocked over that candle.`);
+                previouslySeenComments.add(comment.id);
+                saveSeenContent(previouslySeenPosts, previouslySeenComments);
+                console.log(`🐢 [monitorComments: ${new Date().toLocaleString()}]: Replied to comment by u/${comment.author.name}\nDodge definitely knocked over that candle.`);
+                return comment.reply(`Dodge definitely knocked over that candle.`);
+              }
             }
-          }
-          else {
-            console.log('Ignoring because the id is already listed.');
+            else {
+              console.log(`🐢 [monitorSubreddits ${new Date().toLocaleString()}]: Ignoring because the id is already listed.`);
+              continue;
+            }
           }
 
           // Check for keywords in comment body
@@ -361,7 +362,7 @@ async function respondToComment(comment, matchedKeywords) {
     else if (matchedKeywords.length === 1 && matchedKeywords[0] === 'crabman') {
       reply = 'Crabman is a fan-favorite! Do you have a favorite moment with him?';
     }
-    
+
     if (reply == '') {
       let keywordMention = '';
 
